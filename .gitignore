@@ -1,0 +1,27 @@
+# Results (model outputs, judge scores)
+results/*.json
+results/*.jsonl
+results/**/*.json
+results/**/*.jsonl
+!results/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Secrets (never commit)
+*.key
+.env
+.env.*
+
+# Logs
+*.log

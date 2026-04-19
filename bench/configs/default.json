@@ -1,0 +1,32 @@
+{
+  "benchmark_file": "../questions/benchmark_questions.json",
+  "rubric_file": "../questions/rubric.md",
+  "output_dir": "../results",
+
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-4-6",
+    "max_tokens": 2000,
+    "temperature": 0.0
+  },
+
+  "generation_defaults": {
+    "max_tokens": 4096,
+    "temperature": 0.3,
+    "system_prompt_he": "אתה פוסק הלכה ותלמיד חכם מומחה. ענה בעברית על השאלה ההלכתית שלהלן. ציין מקורות מדויקים (מסכת ודף, סימן וסעיף) מהגמרא, הראשונים והאחרונים. נמק כל פסק — הסבר את הסוגיה, את מחלוקת הראשונים, ואיך נפסקה ההלכה. אם השאלה מחולקת לסעיפים, ענה על כולם."
+  },
+
+  "concurrency": 4,
+  "pilot_count": 20,
+  "api": {
+    "anthropic": {
+      "base_url": "https://api.anthropic.com/v1/messages",
+      "key_file": "~/.openclaw/workspace/memory/api-keys.md",
+      "key_marker": "Anthropic API"
+    },
+    "openai": {
+      "base_url": "https://api.openai.com/v1",
+      "key_env": "OPENAI_API_KEY"
+    }
+  }
+}
