@@ -206,6 +206,13 @@ def main() -> None:
 
     eval_strategy = "steps" if eval_ds is not None else "no"
 
+    # Detect TRL version to use the correct kwarg names
+    import trl as _trl
+    _trl_version = tuple(int(x) for x in _trl.__version__.split('.')[:2])
+
+    _seq_kwarg = "max_length" if _trl_version >= (0, 24) else "max_seq_length"
+    _seq_kwargs = {_seq_kwarg: args.max_seq_length}
+
     training_args = SFTConfig(
         output_dir=str(output_dir),
         per_device_train_batch_size=args.batch_size,
@@ -213,7 +220,7 @@ def main() -> None:
         gradient_accumulation_steps=args.grad_accum,
         learning_rate=args.lr,
         num_train_epochs=args.epochs,
-        max_length=args.max_seq_length,  # TRL 0.24+ renamed max_seq_length → max_length
+        **_seq_kwargs,
         dataset_text_field="text",
         packing=False,
         warmup_ratio=args.warmup_ratio,
@@ -234,15 +241,21 @@ def main() -> None:
         seed=args.seed,
         report_to=report_to,
         run_name=run_name,
-        remove_unused_columns=False,
+        remove_unused_columns=True,
     )
+
+    _trainer_kwargs = {}
+    if _trl_version >= (0, 24):
+        _trainer_kwargs["processing_class"] = tokenizer
+    else:
+        _trainer_kwargs["tokenizer"] = tokenizer
 
     trainer = SFTTrainer(
         model=model,
-        processing_class=tokenizer,  # TRL 0.24 renamed tokenizer → processing_class
         train_dataset=train_ds,
         eval_dataset=eval_ds,
         args=training_args,
+        **_trainer_kwargs,
     )
 
     # Mask loss on prompt tokens — only learn from the assistant turn.
