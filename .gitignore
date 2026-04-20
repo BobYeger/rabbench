@@ -3,7 +3,11 @@ results/*.json
 results/*.jsonl
 results/**/*.json
 results/**/*.jsonl
+results/*.png
 !results/.gitkeep
+
+# Dataset (not public)
+questions/benchmark_questions.json
 
 # Python
 **/__pycache__/

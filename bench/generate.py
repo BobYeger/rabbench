@@ -128,7 +128,7 @@ class OpenAICompatibleBackend:
                 "max_tokens": self.max_tokens,
                 "temperature": self.temperature,
             }
-            r = await client.post(f"{self.base_url}/completions", headers=headers, json=payload, timeout=300.0)
+            r = await client.post(f"{self.base_url}/completions", headers=headers, json=payload, timeout=900.0)
             r.raise_for_status()
             data = r.json()
             text = data["choices"][0].get("text", "")
@@ -142,7 +142,7 @@ class OpenAICompatibleBackend:
                 "max_tokens": self.max_tokens,
                 "temperature": self.temperature,
             }
-            r = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=300.0)
+            r = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=900.0)
             r.raise_for_status()
             data = r.json()
             text = data["choices"][0]["message"].get("content", "")
