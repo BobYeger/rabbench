@@ -30,6 +30,11 @@ rabbench/
 │   ├── compare.py                 # side-by-side report
 │   ├── rabbench_io.py             # shared I/O + API key loader
 │   └── configs/default.json
+├── train/
+│   ├── sft.py                     # Unsloth + TRL SFT (LoRA → merged bf16)
+│   ├── merge.py                   # merge a LoRA adapter into base
+│   ├── eval_rabbench.py           # spin up vLLM → generate → judge → compare
+│   └── configs/sft_default.json
 ├── results/                       # gitignored
 └── docs/PLAN.md
 ```
@@ -87,9 +92,38 @@ Based on Anthropic pricing (Sonnet 4.6 $3/MTok in, $15/MTok out; Opus 4.6 $15/MT
 
 Local models: $0 compute, use our own GPU.
 
+## Training
+
+SFT on top of `Qwen3.5-9B-Base` with Unsloth + TRL. LoRA r=64 / α=128 on all 7 attention + MLP projections, bf16, `train_on_responses_only`. Tuned for DGX Spark (GB10, sm_121, CUDA 13 — no FlashAttention, so `attn_implementation=eager`).
+
+Requires the Unsloth venv at `/home/aigroup/training-env`; vLLM is launched via the Docker image `vllm-openai:qwen3_5-hardened` (the `--enforce-eager` one that works on sm_121).
+
+```bash
+# 1. Train — produces adapter/ and merged/ under output_dir.
+/home/aigroup/training-env/bin/python train/sft.py \
+    --output-dir /home/aigroup/training/rabbench-sft-v1 \
+    --epochs 3 --batch-size 2 --grad-accum 8 --lr 2e-4
+
+# 2. (Optional) Re-merge a specific adapter checkpoint.
+/home/aigroup/training-env/bin/python train/merge.py \
+    --base /home/aigroup/models/Qwen3.5-9B-Base \
+    --adapter /home/aigroup/training/rabbench-sft-v1/adapter \
+    --output /home/aigroup/training/rabbench-sft-v1/merged
+
+# 3. Benchmark the merged model against the RabBench pilot.
+python3 train/eval_rabbench.py \
+    --model-dir /home/aigroup/training/rabbench-sft-v1/merged \
+    --model-name rabbench-sft-v1 \
+    --pilot 20 \
+    --baseline results/judge_Qwen3.5-9B-Base_latest.json \
+    --baseline results/judge_claude-sonnet-4-6_latest.json
+```
+
+Defaults live in [`train/configs/sft_default.json`](train/configs/sft_default.json). The SFT data format is one JSON object per line with a `messages` array (system/user/assistant); `sft.py` applies Qwen's chat template and masks everything but the assistant turn.
+
 ## Design principles
 
-1. **Eval before training.** No training code in this repo.
+1. **Eval-first.** Benchmark design came before training code — all `train/` outputs flow back through `bench/`.
 2. **Absolute scoring.** No reference answers — the judge grades against the rubric.
 3. **Transparent failures.** `red_flags` explicitly track fabricated citations, language drift, refusals.
 4. **Reproducible runs.** Every output stamped with UTC time, model, provider, and full config.

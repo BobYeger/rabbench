@@ -13,6 +13,10 @@ __pycache__/
 .venv/
 venv/
 
+# Training artifacts (Unsloth cache, wandb)
+unsloth_compiled_cache/
+wandb/
+
 # Editor
 .vscode/
 .idea/
