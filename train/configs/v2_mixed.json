@@ -1,0 +1,54 @@
+{
+  "_comment": "RabBench SFT v2 — mixed-data anti-forgetting protocol. See train/README.md for the why.",
+
+  "base_model": "/home/aigroup/models/Qwen3.5-9B-Base",
+  "domain_train_file": "/home/aigroup/rabbinical-project/data/sft/sft_train.jsonl",
+  "domain_val_file": "/home/aigroup/rabbinical-project/data/sft/sft_val.jsonl",
+  "mixed_train_file": "/home/aigroup/training/rabbench-sft-v2-data/mixed_train.jsonl",
+  "mixed_val_file": "/home/aigroup/training/rabbench-sft-v2-data/mixed_val.jsonl",
+  "output_dir": "/home/aigroup/training/rabbench-sft-v2",
+
+  "replay_dataset": "HuggingFaceH4/ultrachat_200k",
+  "replay_split": "train_sft",
+  "replay_ratio": 0.20,
+  "replay_max_turns": 4,
+
+  "max_seq_length": 4096,
+
+  "lora_r": 64,
+  "lora_alpha": 128,
+  "lora_dropout": 0.0,
+  "lora_target_modules": [
+    "q_proj", "k_proj", "v_proj", "o_proj",
+    "gate_proj", "up_proj", "down_proj"
+  ],
+
+  "per_device_batch": 2,
+  "grad_accum": 8,
+  "learning_rate": 1e-5,
+  "num_epochs": 1,
+  "warmup_ratio": 0.05,
+  "lr_scheduler": "cosine",
+  "weight_decay": 0.0,
+  "max_grad_norm": 1.0,
+  "neftune_noise_alpha": 0,
+
+  "logging_steps": 10,
+  "eval_steps": 250,
+  "save_steps": 250,
+  "save_total_limit": 6,
+
+  "probe_every_steps": 250,
+  "probe_max_new_tokens": 96,
+  "probe_baseline_accuracy": 0.767,
+  "probe_regression_threshold_pp": 3.0,
+  "early_stop_on_probe_regression": true,
+  "early_stop_eval_loss_patience": 2,
+
+  "seed": 42,
+  "attn_implementation": "eager",
+  "train_on_responses_only": true,
+  "chat_template": "qwen-2.5",
+  "instruction_part": "<|im_start|>user\n",
+  "response_part": "<|im_start|>assistant\n"
+}

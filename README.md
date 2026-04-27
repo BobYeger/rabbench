@@ -11,32 +11,42 @@ V1-V8 of our Hebrew rabbinical LLM taught us one thing: **you can't iterate on t
 
 ## Status
 
-- Questions: ✅ 825 parsed, 15 subjects, Hebrew text
+- Questions: ✅ 825 essay + 103 factual probe (with gold answers)
 - Rubric: ✅ 5 dimensions (accuracy, sources, reasoning, completeness, language)
-- Scripts: ✅ `generate.py`, `judge.py`, `compare.py`
-- Baselines: ⏳ Sonnet 4.6 (pilot), Opus 4.6 (pilot), Qwen3.5-9B-Base (TBD)
-- Judge stability: ⏳ to validate with pilot
+- Bench scripts: ✅ `generate.py`, `judge.py`, `compare.py`, `probe.py`
+- Baselines: ✅ Sonnet 4.6, Opus 4.6, Haiku 4.5, GPT-4o-mini, Qwen3.5-9B-Base
+- Training v1 (lr=2e-4, domain-only, 3 ep): **❌ -12.6pp on factual probe** (catastrophic forgetting)
+- Training v2 (mixed data, lr=1e-5, 1 ep, probe-gated): 🚧 implemented, not yet run
+
+## What we learned from v1
+
+V1 SFT improved essay quality by +0.85 on the rubric but dropped factual probe
+accuracy from 76.7% → 64.1%. Eval loss plateaued at epoch 1.2; epochs 2–3 were
+pure forgetting. The full post-mortem and the v2 protocol live in
+[`train/README.md`](train/README.md).
 
 ## Layout
 
 ```
 rabbench/
 ├── questions/
-│   ├── benchmark_questions.json   # 825 questions
+│   ├── benchmark_questions.json   # 825 essay questions
+│   ├── factual_probe.json         # 103 short-answer Qs with gold answers
 │   └── rubric.md                  # scoring rubric
 ├── bench/
-│   ├── generate.py                # model → answers
-│   ├── judge.py                   # Opus → scores
+│   ├── generate.py                # model → essay answers
+│   ├── judge.py                   # Opus → rubric scores
 │   ├── compare.py                 # side-by-side report
+│   ├── probe.py                   # factual probe runner (fuzzy + LLM judge)
 │   ├── rabbench_io.py             # shared I/O + API key loader
 │   └── configs/default.json
 ├── train/
-│   ├── sft.py                     # Unsloth + TRL SFT (LoRA → merged bf16)
-│   ├── merge.py                   # merge a LoRA adapter into base
-│   ├── eval_rabbench.py           # spin up vLLM → generate → judge → compare
-│   └── configs/sft_default.json
+│   ├── prepare_data.py            # build 80/20 domain+replay mix
+│   ├── sft.py                     # Unsloth + TRL SFT, in-process probe callback
+│   ├── eval_during_training.py    # check a checkpoint via vLLM probe
+│   ├── configs/v2_mixed.json
+│   └── README.md                  # v2 protocol & v1 post-mortem
 ├── results/                       # gitignored
-└── docs/PLAN.md
 ```
 
 ## Quick start
@@ -94,32 +104,24 @@ Local models: $0 compute, use our own GPU.
 
 ## Training
 
-SFT on top of `Qwen3.5-9B-Base` with Unsloth + TRL. LoRA r=64 / α=128 on all 7 attention + MLP projections, bf16, `train_on_responses_only`. Tuned for DGX Spark (GB10, sm_121, CUDA 13 — no FlashAttention, so `attn_implementation=eager`).
-
-Requires the Unsloth venv at `/home/aigroup/training-env`; vLLM is launched via the Docker image `vllm-openai:qwen3_5-hardened` (the `--enforce-eager` one that works on sm_121).
+SFT on top of `Qwen3.5-9B-Base` with Unsloth + TRL on DGX Spark (GB10, sm_121,
+no FlashAttention). The v2 protocol fixes v1's forgetting collapse: 80/20
+domain+replay mix, LR 1e-5, 1-epoch cap, factual-probe-gated early stopping.
 
 ```bash
-# 1. Train — produces adapter/ and merged/ under output_dir.
-/home/aigroup/training-env/bin/python train/sft.py \
-    --output-dir /home/aigroup/training/rabbench-sft-v1 \
-    --epochs 3 --batch-size 2 --grad-accum 8 --lr 2e-4
+# 1) Build 80/20 mixed jsonl (domain SFT + UltraChat-200k replay)
+/home/aigroup/training-env/bin/python train/prepare_data.py
 
-# 2. (Optional) Re-merge a specific adapter checkpoint.
-/home/aigroup/training-env/bin/python train/merge.py \
-    --base /home/aigroup/models/Qwen3.5-9B-Base \
-    --adapter /home/aigroup/training/rabbench-sft-v1/adapter \
-    --output /home/aigroup/training/rabbench-sft-v1/merged
+# 2) Pilot — 200 steps end-to-end check with the in-process factual probe
+/home/aigroup/training-env/bin/python train/sft.py --pilot-steps 200
 
-# 3. Benchmark the merged model against the RabBench pilot.
-python3 train/eval_rabbench.py \
-    --model-dir /home/aigroup/training/rabbench-sft-v1/merged \
-    --model-name rabbench-sft-v1 \
-    --pilot 20 \
-    --baseline results/judge_Qwen3.5-9B-Base_latest.json \
-    --baseline results/judge_claude-sonnet-4-6_latest.json
+# 3) Full run (1 epoch, ~24.9k samples)
+/home/aigroup/training-env/bin/python train/sft.py
 ```
 
-Defaults live in [`train/configs/sft_default.json`](train/configs/sft_default.json). The SFT data format is one JSON object per line with a `messages` array (system/user/assistant); `sft.py` applies Qwen's chat template and masks everything but the assistant turn.
+Hyperparameters live in [`train/configs/v2_mixed.json`](train/configs/v2_mixed.json).
+Full protocol, decision log, and post-hoc validation steps are in
+[`train/README.md`](train/README.md).
 
 ## Design principles
 
