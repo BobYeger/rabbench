@@ -34,3 +34,4 @@ wandb/
 
 # Logs
 *.log
+__pycache__/
