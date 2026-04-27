@@ -2,20 +2,17 @@
   "benchmark_file": "../questions/benchmark_questions.json",
   "rubric_file": "../questions/rubric.md",
   "output_dir": "../results",
-
   "judge": {
     "provider": "anthropic",
     "model": "claude-opus-4-6",
     "max_tokens": 2000,
     "temperature": 0.0
   },
-
   "generation_defaults": {
-    "max_tokens": 4096,
+    "max_tokens": 2048,
     "temperature": 0.3,
-    "system_prompt_he": "אתה פוסק הלכה ותלמיד חכם מומחה. ענה בעברית על השאלה ההלכתית שלהלן. ציין מקורות מדויקים (מסכת ודף, סימן וסעיף) מהגמרא, הראשונים והאחרונים. נמק כל פסק — הסבר את הסוגיה, את מחלוקת הראשונים, ואיך נפסקה ההלכה. אם השאלה מחולקת לסעיפים, ענה על כולם."
+    "system_prompt_he": "\u05d0\u05ea\u05d4 \u05e4\u05d5\u05e1\u05e7 \u05d4\u05dc\u05db\u05d4 \u05d5\u05ea\u05dc\u05de\u05d9\u05d3 \u05d7\u05db\u05dd \u05de\u05d5\u05de\u05d7\u05d4. \u05e2\u05e0\u05d4 \u05d1\u05e2\u05d1\u05e8\u05d9\u05ea \u05e2\u05dc \u05d4\u05e9\u05d0\u05dc\u05d4 \u05d4\u05d4\u05dc\u05db\u05ea\u05d9\u05ea \u05e9\u05dc\u05d4\u05dc\u05df. \u05e6\u05d9\u05d9\u05df \u05de\u05e7\u05d5\u05e8\u05d5\u05ea \u05de\u05d3\u05d5\u05d9\u05e7\u05d9\u05dd (\u05de\u05e1\u05db\u05ea \u05d5\u05d3\u05e3, \u05e1\u05d9\u05de\u05df \u05d5\u05e1\u05e2\u05d9\u05e3) \u05de\u05d4\u05d2\u05de\u05e8\u05d0, \u05d4\u05e8\u05d0\u05e9\u05d5\u05e0\u05d9\u05dd \u05d5\u05d4\u05d0\u05d7\u05e8\u05d5\u05e0\u05d9\u05dd. \u05e0\u05de\u05e7 \u05db\u05dc \u05e4\u05e1\u05e7 \u2014 \u05d4\u05e1\u05d1\u05e8 \u05d0\u05ea \u05d4\u05e1\u05d5\u05d2\u05d9\u05d4, \u05d0\u05ea \u05de\u05d7\u05dc\u05d5\u05e7\u05ea \u05d4\u05e8\u05d0\u05e9\u05d5\u05e0\u05d9\u05dd, \u05d5\u05d0\u05d9\u05da \u05e0\u05e4\u05e1\u05e7\u05d4 \u05d4\u05d4\u05dc\u05db\u05d4. \u05d0\u05dd \u05d4\u05e9\u05d0\u05dc\u05d4 \u05de\u05d7\u05d5\u05dc\u05e7\u05ea \u05dc\u05e1\u05e2\u05d9\u05e4\u05d9\u05dd, \u05e2\u05e0\u05d4 \u05e2\u05dc \u05db\u05d5\u05dc\u05dd."
   },
-
   "concurrency": 4,
   "pilot_count": 20,
   "api": {
